@@ -4,20 +4,33 @@
 	import Feed from "./components/Feed.vue"
 	import Sidebar from "./components/Sidebar.vue"
 	import { ref } from "vue"
+	import { useStore } from "vuex"
 	import {
 		getAuth,
 		onAuthStateChanged,
 		signInWithPopup,
 		GoogleAuthProvider
 	} from "firebase/auth"
+	import { getFirestore, doc, setDoc } from "firebase/firestore"
 
-	const user = ref(null)
+	const store = useStore()
 
-	onAuthStateChanged(getAuth(), u => user.value = u)
+	onAuthStateChanged(getAuth(), user => {
+		store.commit("auth", {
+			uid: user.uid,
+			name: user.displayName,
+			avatar: user.photoURL,
+			follows: []
+		})
+
+		if(user) {
+			setDoc(doc(getFirestore(), `users/${user.uid}`), store.state.user)
+		}
+	})
 </script>
 
 <template>
-	<template v-if="user">
+	<template v-if="store.state.user">
 		<navbar></navbar>
 		<main class="max-w-screen-lg mx-auto p-4 grid grid-cols-[1fr_2fr_1fr] gap-4 items-start">
 			<profile></profile>

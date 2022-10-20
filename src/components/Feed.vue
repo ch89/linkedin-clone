@@ -2,6 +2,7 @@
 	import Post from "./Post.vue"
 	import { ref } from "vue"
 	import { getAuth } from "firebase/auth"
+	import { useStore } from "vuex"
 	import {
 		getFirestore,
 		collection,
@@ -10,7 +11,8 @@
 		doc,
 		serverTimestamp,
 		query,
-		orderBy
+		orderBy,
+		where
 	} from "firebase/firestore"
 	import {
 		getStorage,
@@ -19,6 +21,7 @@
 		getDownloadURL
 	} from "firebase/storage"
 
+	const store = useStore()
 	const user = getAuth().currentUser
 	const posts = ref([])
 	const message = ref("")
@@ -40,6 +43,7 @@
 		await setDoc(docRef, {
 			name: user.displayName,
 			avatar: user.photoURL,
+			uid: user.uid,
 			message: message.value,
 			photo: await getDownloadURL(photoRef),
 			likes: [],
@@ -52,11 +56,21 @@
 	}
 
 	onSnapshot(
-		query(collection(getFirestore(), "posts"), orderBy("timestamp", "desc")),
+		query(
+			collection(getFirestore(), "posts"),
+			where("uid", "==", user.uid),
+			// orderBy("timestamp", "desc")
+		),
 		snapshot => posts.value = snapshot.docs.map(doc => ({
 			id: doc.id,
 			...doc.data()
 		}))
+	)
+
+	// Fortsätt här
+	onSnapshot(
+		doc(getFirestore(), `users/${user.uid}`),
+		doc => console.log(doc)
 	)
 </script>
 

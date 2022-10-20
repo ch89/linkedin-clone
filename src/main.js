@@ -1,6 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import './assets/main.css'
+import store from "./store"
 import { initializeApp } from "firebase/app"
 
 initializeApp({
@@ -13,4 +14,6 @@ initializeApp({
 	measurementId: "G-YNTNKXJ5DJ"
 })
 
-createApp(App).mount('#app')
+createApp(App)
+	.use(store)
+	.mount('#app')
