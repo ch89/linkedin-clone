@@ -4,33 +4,32 @@
 	import Feed from "./components/Feed.vue"
 	import Sidebar from "./components/Sidebar.vue"
 	import { ref } from "vue"
-	import { useStore } from "vuex"
 	import {
 		getAuth,
 		onAuthStateChanged,
 		signInWithPopup,
-		GoogleAuthProvider
+		GoogleAuthProvider,
+		getAdditionalUserInfo
 	} from "firebase/auth"
 	import { getFirestore, doc, setDoc } from "firebase/firestore"
 
-	const store = useStore()
+	const user = ref(null)
 
-	onAuthStateChanged(getAuth(), user => {
-		store.commit("auth", {
-			uid: user.uid,
-			name: user.displayName,
-			avatar: user.photoURL,
-			follows: []
-		})
+	let login = async e => {
+		const cred = await signInWithPopup(getAuth(), new GoogleAuthProvider)
 
-		if(user) {
-			setDoc(doc(getFirestore(), `users/${user.uid}`), store.state.user)
+		if(getAdditionalUserInfo(cred).isNewUser) {
+			let { uid, displayName, photoURL } = cred.user
+
+			setDoc(doc(getFirestore(), `users/${uid}`), { uid, displayName, photoURL })
 		}
-	})
+	}
+
+	onAuthStateChanged(getAuth(), u => user.value = u)
 </script>
 
 <template>
-	<template v-if="store.state.user">
+	<template v-if="user">
 		<navbar></navbar>
 		<main class="max-w-screen-lg mx-auto p-4 grid grid-cols-[1fr_2fr_1fr] gap-4 items-start">
 			<profile></profile>
@@ -44,7 +43,7 @@
 			<form class="grid gap-4 text-sm">
 				<input class="border px-4 py-2 rounded-lg outline-none" type="email" placeholder="Email">
 				<input class="border px-4 py-2 rounded-lg outline-none" type="password" placeholder="Password">
-				<button type="button" @click="signInWithPopup(getAuth(), new GoogleAuthProvider)" class="bg-blue-400 text-white py-2 rounded-lg font-bold">Sign In</button>
+				<button type="button" @click="login" class="bg-blue-400 text-white py-2 rounded-lg font-bold">Sign In</button>
 			</form>
 		</div>
 	</div>

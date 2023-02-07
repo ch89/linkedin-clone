@@ -35,42 +35,53 @@
 	let add = async e => {
 		loading.value = true
 
-		let docRef = doc(collection(getFirestore(), "posts")),
-			photoRef = storageRef(getStorage(), docRef.id)
+		let docRef = doc(collection(getFirestore(), "posts"))
 
-		await uploadString(photoRef, photo.value, "data_url")
-
-		await setDoc(docRef, {
+		let data = {
 			name: user.displayName,
 			avatar: user.photoURL,
 			uid: user.uid,
 			message: message.value,
-			photo: await getDownloadURL(photoRef),
 			likes: [],
 			timestamp: serverTimestamp()
-		})
+		}
+
+		if(photo.value) {
+			let photoRef = storageRef(getStorage(), docRef.id)
+			await uploadString(photoRef, photo.value, "data_url")
+			data.photo = await getDownloadURL(photoRef)
+		}
+
+		await setDoc(docRef, data)
 
 		message.value = ""
 		photo.value = null
 		loading.value = false
 	}
 
-	onSnapshot(
-		query(
-			collection(getFirestore(), "posts"),
-			where("uid", "==", user.uid),
-			// orderBy("timestamp", "desc")
-		),
-		snapshot => posts.value = snapshot.docs.map(doc => ({
-			id: doc.id,
-			...doc.data()
-		}))
-	)
+	let unsubscribe
 
-	// Fortsätt här
 	onSnapshot(
-		doc(getFirestore(), `users/${user.uid}`),
-		doc => console.log(doc)
+		collection(getFirestore(), `users/${user.uid}/follows`),
+		snapshot => {
+			let uids = snapshot.docs.map(doc => doc.id)
+
+			store.commit("follows", uids)
+
+			if(unsubscribe) unsubscribe()
+
+			unsubscribe = onSnapshot(
+				query(
+					collection(getFirestore(), "posts"),
+					where("uid", "in", [user.uid, ...uids]),
+					orderBy("timestamp", "desc")
+				),
+				snapshot => posts.value = snapshot.docs.map(doc => ({
+					id: doc.id,
+					...doc.data()
+				}))
+			)
+		}
 	)
 </script>
 

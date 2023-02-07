@@ -21,8 +21,11 @@
 	}
 
 	let remove = e => {
+		if(props.post.photo) {
+			deleteObject(storageRef(getStorage(), props.post.id))
+		}
+		
 		deleteDoc(doc(getFirestore(), `posts/${props.post.id}`))
-		deleteObject(storageRef(getStorage(), props.post.id))
 	}
 </script>
 
@@ -35,13 +38,13 @@
 					<h3 class="font-bold">{{ post.name }}</h3>
 					<p class="text-sm text-gray-500">{{ moment(post.timestamp?.toDate()).fromNow() }}</p>
 				</div>
-				<button class="ml-auto" @click="remove">
+				<button class="ml-auto" @click="post.uid == uid ? remove() : null">
 					<i class="fa-solid fa-ellipsis"></i>
 				</button>
 			</div>
 			<p>{{ post.message }}</p>
 		</div>
-		<img :src="post.photo" alt="Photo" class="w-full">
+		<img v-if="post.photo" :src="post.photo" alt="Photo" class="w-full">
 		<div class="p-4 flex justify-evenly">
 			<button @click="like" class="flex items-center gap-2">
 				<i class="fa-heart" :class="post.likes.includes(uid) ? 'fa-solid text-red-400' : 'fa-regular'"></i>
